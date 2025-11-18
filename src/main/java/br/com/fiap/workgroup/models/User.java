@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,8 +22,9 @@ public class User {
 
     @Id
     @Column(name = "ID_USER")
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id_user;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
+    @SequenceGenerator(name = "user_seq", sequenceName = "T_WG_USER_SEQ", allocationSize = 1)
+    private Long id_user;
 
     @Column(name = "NM_USER")
     @NotBlank(message = "O nome do usuário é obrigatório")

@@ -1,4 +1,4 @@
-package br.com.fiap.workgroup.dto;
+package br.com.fiap.workgroup.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,6 +7,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class IntroDTO {
 
+    private String title;
     private String message;
-    
+
 }
