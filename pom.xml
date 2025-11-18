@@ -94,6 +94,11 @@
 		<artifactId>spring-boot-starter-hateoas</artifactId>
 	</dependency>
 
+	<dependency>
+		<groupId>com.github.ben-manes.caffeine</groupId>
+		<artifactId>caffeine</artifactId>
+	</dependency>
+
 </dependencies>
 	<build>
 		<plugins>

@@ -2,10 +2,13 @@ package br.com.fiap.workgroup.controllers;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +21,7 @@ import br.com.fiap.workgroup.dtos.IntroDTO;
 import br.com.fiap.workgroup.hateoas.IntroAssembler;
 import br.com.fiap.workgroup.models.User;
 import br.com.fiap.workgroup.services.UserService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/user")
@@ -39,9 +43,16 @@ public class UserController {
 
     // CREATE
     @PostMapping("/create")
-    public ResponseEntity<User> createUsers(@RequestBody User user) {
+    public ResponseEntity<User> createUsers(@RequestBody @Valid User user) {
         User createdUser = userService.createUser(user);
         return ResponseEntity.ok(createdUser);
+    }
+
+    // READ - paginated
+    @GetMapping("/page")
+    public ResponseEntity<Page<User>> getUsersPage(Pageable pageable) {
+        Page<User> page = userService.findAllPageable(pageable);
+        return ResponseEntity.ok(page);
     }
 
     // READ
@@ -51,22 +62,22 @@ public class UserController {
     }
 
     // READ - BY ID
-    @GetMapping("/id")
-    public ResponseEntity<User> getById(@RequestBody Long id) {
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.findById(id));
     }
 
     // UPDATE
     @PutMapping("/update/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody @Valid User user) {
         return ResponseEntity.ok(userService.update(id, user));
     }
 
     // DELETE
-    @PostMapping("/delete/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         userService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("User deleted successfully!");
     }
 
 }
