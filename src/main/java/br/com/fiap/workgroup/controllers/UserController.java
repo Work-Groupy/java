@@ -5,9 +5,9 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fiap.workgroup.dtos.IntroDTO;
+import br.com.fiap.workgroup.dtos.LoginDTO;
+import br.com.fiap.workgroup.dtos.LoginResponseDTO;
 import br.com.fiap.workgroup.hateoas.IntroAssembler;
 import br.com.fiap.workgroup.models.User;
 import br.com.fiap.workgroup.services.UserService;
@@ -25,7 +27,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/user")
-@EnableSpringDataWebSupport
+@CrossOrigin(origins = "*")
 public class UserController {
     
     @Autowired
@@ -44,7 +46,7 @@ public class UserController {
     // CREATE
     @PostMapping("/create")
     public ResponseEntity<User> createUsers(@RequestBody @Valid User user) {
-        User createdUser = userService.createUser(user);
+        User createdUser = userService.create(user);
         return ResponseEntity.ok(createdUser);
     }
 
@@ -79,5 +81,20 @@ public class UserController {
         userService.delete(id);
         return ResponseEntity.ok("User deleted successfully!");
     }
+
+    // LOGIN
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginDTO login) {
+        User user = userService.login(login.getEmail(), login.getPassword());
+
+        LoginResponseDTO response = new LoginResponseDTO(
+            user.getId(),
+            user.getName(),
+            user.getEmail()
+        );
+        
+        return ResponseEntity.ok(response);
+    }
+
 
 }

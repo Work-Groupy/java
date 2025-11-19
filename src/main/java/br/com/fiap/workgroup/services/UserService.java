@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import br.com.fiap.workgroup.models.User;
 import br.com.fiap.workgroup.repositories.UserRepository;
-import br.com.fiap.workgroup.security.PasswordUtil;
 
 @Service
 public class UserService {
@@ -19,19 +19,16 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // Create user with hashed password
-    public User createUser(User user) {
-        String hashed = PasswordUtil.hashPassword(user.getPassword());
-        user.setPassword(hashed);
-
-        return userRepository.save(user);
-    }
-
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
     // CRUD Operations
     // CREATE
     @SuppressWarnings("null")
     @CacheEvict(value = "users", allEntries = true)
     public User create(User user) {
+        String hashedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(hashedPassword);
         return userRepository.save(user);
     }
 
@@ -70,6 +67,20 @@ public class UserService {
     @SuppressWarnings("null")
     public void delete(Long id) {
         userRepository.deleteById(id);
+    }
+
+    // LOGIN
+    public User login(String email, String rawPassword) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Email not found"));
+
+        boolean passwordMatch = passwordEncoder.matches(rawPassword, user.getPassword());
+
+        if (!passwordMatch) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        return user;
     }
 
 }

@@ -2,6 +2,8 @@ package br.com.fiap.workgroup.models;
 
 import java.time.LocalDate;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,7 +13,6 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
@@ -24,7 +25,7 @@ public class User {
     @Column(name = "ID_USER")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
     @SequenceGenerator(name = "user_seq", sequenceName = "T_WG_USER_SEQ", allocationSize = 1)
-    private Long id_user;
+    private Long id;
 
     @Column(name = "NM_USER")
     @NotBlank(message = "O nome do usuário é obrigatório")
@@ -47,7 +48,7 @@ public class User {
     private String password;
 
     @Column(name = "DT_CRIADA")
-    @NotNull(message = "A data de criação não pode ser nula")
+    @CreationTimestamp
     private LocalDate created_at;
 
     @Lob
