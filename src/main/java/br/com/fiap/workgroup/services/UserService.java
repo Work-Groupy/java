@@ -1,6 +1,7 @@
 package br.com.fiap.workgroup.services;
 
 import java.util.List;
+import java.util.Base64;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import br.com.fiap.workgroup.dtos.UserResponseDTO;
 import br.com.fiap.workgroup.models.User;
 import br.com.fiap.workgroup.repositories.UserRepository;
 
@@ -81,6 +83,53 @@ public class UserService {
         }
 
         return user;
+    }
+
+    // EMAIL EXISTS
+    public boolean emailExists(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        return userRepository.existsByEmailIgnoreCase(email.trim());
+    }
+
+    // UPDATE PROFILE IMAGE
+    public void updateProfileImage(Long id, String base64) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        if (base64 == null || base64.trim().isEmpty()) {
+            user.setProfile(null);
+            userRepository.save(user);
+            return;
+        }
+
+        byte[] imageBytes;
+        try {
+            imageBytes = Base64.getDecoder().decode(base64);
+        } catch (IllegalArgumentException ex) {
+            throw new RuntimeException("Invalid image data", ex);
+        }
+
+        user.setProfile(imageBytes);
+        userRepository.save(user);
+    }
+
+    // Convert User to UserResponseDTO
+    public UserResponseDTO toDTO(User user) {
+        String imageBase64 = null;
+
+        if (user.getProfile() != null) {
+            imageBase64 = Base64.getEncoder().encodeToString(user.getProfile());
+        }
+
+        UserResponseDTO dto = new UserResponseDTO();
+        dto.setId(user.getId());
+        dto.setName(user.getName());
+        dto.setEmail(user.getEmail());
+        dto.setProfileBase64(imageBase64);
+
+        return dto;
     }
 
 }

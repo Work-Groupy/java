@@ -1,6 +1,8 @@
 package br.com.fiap.workgroup.controllers;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,11 +17,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fiap.workgroup.dtos.IntroDTO;
 import br.com.fiap.workgroup.dtos.LoginDTO;
 import br.com.fiap.workgroup.dtos.LoginResponseDTO;
+import br.com.fiap.workgroup.dtos.UserResponseDTO;
 import br.com.fiap.workgroup.hateoas.IntroAssembler;
 import br.com.fiap.workgroup.models.User;
 import br.com.fiap.workgroup.services.UserService;
@@ -52,27 +56,48 @@ public class UserController {
 
     // READ - paginated
     @GetMapping("/page")
-    public ResponseEntity<Page<User>> getUsersPage(Pageable pageable) {
-        Page<User> page = userService.findAllPageable(pageable);
-        return ResponseEntity.ok(page);
+    public ResponseEntity<Page<UserResponseDTO>> getUsersPage(Pageable pageable) {
+        Page<User> pageUsers = userService.findAllPageable(pageable);
+        Page<UserResponseDTO> dtoPage = pageUsers.map(userService::toDTO);
+        return ResponseEntity.ok(dtoPage);
     }
 
     // READ
     @GetMapping("/all")
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userService.findAll());
+    public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
+        List<User> users = userService.findAll();
+        List<UserResponseDTO> dtos = users.stream()
+                .map(userService::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     // READ - BY ID
     @GetMapping("/{id}")
-    public ResponseEntity<User> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.findById(id));
+    public ResponseEntity<UserResponseDTO> getById(@PathVariable Long id) {
+        User user = userService.findById(id);
+        UserResponseDTO dto = userService.toDTO(user);
+        return ResponseEntity.ok(dto);
     }
 
     // UPDATE
     @PutMapping("/update/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody @Valid User user) {
         return ResponseEntity.ok(userService.update(id, user));
+    }
+
+    // UPDATE PROFILE IMAGE
+    @PostMapping("/user/{id}/profile-image")
+    public ResponseEntity<?> updateProfileImage(@PathVariable Long id,
+                                                @RequestBody Map<String, String> body) {
+
+        String base64 = body.get("imageBase64");
+        if (base64 == null || base64.isBlank()) {
+            return ResponseEntity.badRequest().body("Base64 da imagem ausente");
+        }
+
+        userService.updateProfileImage(id, base64);
+        return ResponseEntity.ok().body("Imagem atualizada");
     }
 
     // DELETE
@@ -94,6 +119,13 @@ public class UserController {
         );
         
         return ResponseEntity.ok(response);
+    }
+
+    // EMAIL EXISTS
+    @GetMapping("/exists")
+    public ResponseEntity<Map<String, Boolean>> emailExists(@RequestParam String email) {
+        boolean exists = userService.emailExists(email);
+        return ResponseEntity.ok(Map.of("exists", exists));
     }
 
 

@@ -11,5 +11,6 @@ import br.com.fiap.workgroup.models.User;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
+    boolean existsByEmailIgnoreCase(String email);
 
 }
