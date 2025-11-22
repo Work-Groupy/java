@@ -1,0 +1,54 @@
+----------------------------------------------------
+-- TABELA DE USUÁRIO
+----------------------------------------------------
+CREATE TABLE T_WG_USER (
+    ID_USER          INTEGER          NOT NULL,
+    ID_EMAIL         VARCHAR2(100)    NOT NULL,
+    CD_SENHA         VARCHAR2(20)     NOT NULL,
+    NM_USER          VARCHAR2(50)     NOT NULL,
+    DT_CRIADA        DATE             NOT NULL,
+    IMG_CURRICULO    BLOB,
+    IMG_PERFIL       BLOB,
+    DS_BIOGRAFIA     VARCHAR2(100),
+    CONSTRAINT PK_WG_USER PRIMARY KEY (ID_USER)
+);
+
+----------------------------------------------------
+-- TABELA DE COMPETÊNCIAS
+----------------------------------------------------
+CREATE TABLE T_WG_COMPETENCIAS (
+    ID_COMPETENCIA   INTEGER        NOT NULL,
+    ID_USER          INTEGER        NOT NULL,
+    NM_COMPETENCIA   VARCHAR2(25)   NOT NULL,
+    CONSTRAINT PK_WG_COMPETENCIAS PRIMARY KEY (ID_COMPETENCIA, ID_USER),
+    CONSTRAINT FK_COMP_USER FOREIGN KEY (ID_USER)
+        REFERENCES T_WG_USER(ID_USER)
+);
+
+----------------------------------------------------
+-- TABELA DE EXPERIÊNCIAS
+----------------------------------------------------
+CREATE TABLE T_WG_EXPERIENCIA (
+    ID_EXPERIENCIA   INTEGER        NOT NULL,
+    ID_USER          INTEGER        NOT NULL,
+    NM_EMPRESA       VARCHAR2(30)   NOT NULL,
+    ID_CARGO         VARCHAR2(20)   NOT NULL,
+    DT_INICIO        DATE           NOT NULL,
+    DT_FIM           DATE,
+    CONSTRAINT PK_WG_EXPERIENCIA PRIMARY KEY (ID_EXPERIENCIA, ID_USER),
+    CONSTRAINT FK_EXP_USER FOREIGN KEY (ID_USER)
+        REFERENCES T_WG_USER(ID_USER)
+);
+
+----------------------------------------------------
+-- TABELA DE SEGUIDORES (RELACIONAMENTO N:N)
+----------------------------------------------------
+CREATE TABLE T_WG_SEGUIDORES (
+    ID_USER_SEGUIDO   INTEGER   NOT NULL,
+    ID_USER           INTEGER   NOT NULL,
+    CONSTRAINT PK_WG_SEGUIDORES PRIMARY KEY (ID_USER_SEGUIDO, ID_USER),
+    CONSTRAINT FK_SEGUIR_USER FOREIGN KEY (ID_USER)
+        REFERENCES T_WG_USER(ID_USER),
+    CONSTRAINT FK_SEGUIDO_USER FOREIGN KEY (ID_USER_SEGUIDO)
+        REFERENCES T_WG_USER(ID_USER)
+);
