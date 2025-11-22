@@ -22,13 +22,13 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
     
-    // CRUD Operations
     // CREATE
-    @SuppressWarnings("null")
-    @CacheEvict(value = "users", allEntries = true)
+    @CacheEvict(value = {"users","users_page"}, allEntries = true)
     public User create(User user) {
-        String hashedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(hashedPassword);
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            String hashedPassword = passwordEncoder.encode(user.getPassword());
+            user.setPassword(hashedPassword);
+        }
         return userRepository.save(user);
     }
 
@@ -53,12 +53,28 @@ public class UserService {
             .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
-    // UPDATE
+    // UPDATE seletivo
+    @SuppressWarnings("null")
     @CacheEvict(value = {"users", "user", "users_page"}, key = "#id", allEntries = true)
     public User update(Long id, User newUser) {
         User user = findById(id);
-        user.setName(newUser.getName());
-        user.setEmail(newUser.getEmail());
+
+        if (newUser.getName() != null) user.setName(newUser.getName());
+        if (newUser.getEmail() != null) user.setEmail(newUser.getEmail());
+        if (newUser.getBio() != null) user.setBio(newUser.getBio());
+
+        if (newUser.getPassword() != null && !newUser.getPassword().isBlank()) {
+            String hashedPassword = passwordEncoder.encode(newUser.getPassword());
+            user.setPassword(hashedPassword);
+        }
+
+        if (newUser.getProfile() != null && newUser.getProfile().length > 0) {
+            user.setProfile(newUser.getProfile());
+        }
+        if (newUser.getResume() != null && newUser.getResume().length > 0) {
+            user.setResume(newUser.getResume());
+        }
+
         return userRepository.save(user);
     }
 
@@ -82,5 +98,11 @@ public class UserService {
 
         return user;
     }
+
+    // CHECK EMAIL EXISTS
+    public boolean emailExists(String email) {
+        return userRepository.existsByEmailIgnoreCase(email);
+    }
+
 
 }

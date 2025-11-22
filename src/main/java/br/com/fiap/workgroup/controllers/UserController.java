@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fiap.workgroup.dtos.IntroDTO;
@@ -36,64 +37,56 @@ public class UserController {
     @Autowired
     private IntroAssembler introAssembler;
 
-    // INTRO
     @GetMapping
     public ResponseEntity<EntityModel<IntroDTO>> getIntro() {
         IntroDTO introDTO = new IntroDTO("Workgroup API", "Welcome to the Workgroup API! Use the provided links to navigate through the available resources.");
         return ResponseEntity.ok(introAssembler.toModel(introDTO));
     }
 
-    // CREATE
     @PostMapping("/create")
     public ResponseEntity<User> createUsers(@RequestBody @Valid User user) {
         User createdUser = userService.create(user);
         return ResponseEntity.ok(createdUser);
     }
 
-    // READ - paginated
     @GetMapping("/page")
     public ResponseEntity<Page<User>> getUsersPage(Pageable pageable) {
         Page<User> page = userService.findAllPageable(pageable);
         return ResponseEntity.ok(page);
     }
 
-    // READ
     @GetMapping("/all")
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.findAll());
     }
 
-    // READ - BY ID
     @GetMapping("/{id}")
     public ResponseEntity<User> getById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.findById(id));
     }
 
-    // UPDATE
     @PutMapping("/update/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody @Valid User user) {
         return ResponseEntity.ok(userService.update(id, user));
     }
 
-    // DELETE
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         userService.delete(id);
         return ResponseEntity.ok("User deleted successfully!");
     }
 
-    // LOGIN
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginDTO login) {
         User user = userService.login(login.getEmail(), login.getPassword());
-
-        LoginResponseDTO response = new LoginResponseDTO(
-            user.getId(),
-            user.getName(),
-            user.getEmail()
-        );
-        
+        LoginResponseDTO response = new LoginResponseDTO(user.getId(), user.getName(), user.getEmail());
         return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/exists")
+    public ResponseEntity<Boolean> emailExists(@RequestParam String email) {
+        boolean exists = userService.emailExists(email);
+        return ResponseEntity.ok(exists);
     }
 
 
