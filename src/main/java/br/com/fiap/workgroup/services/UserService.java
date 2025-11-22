@@ -1,7 +1,6 @@
 package br.com.fiap.workgroup.services;
 
 import java.util.List;
-import java.util.Base64;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,7 +10,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import br.com.fiap.workgroup.dtos.UserResponseDTO;
 import br.com.fiap.workgroup.models.User;
 import br.com.fiap.workgroup.repositories.UserRepository;
 
@@ -24,13 +22,13 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
     
-    // CRUD Operations
     // CREATE
-    @SuppressWarnings("null")
-    @CacheEvict(value = "users", allEntries = true)
+    @CacheEvict(value = {"users","users_page"}, allEntries = true)
     public User create(User user) {
-        String hashedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(hashedPassword);
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            String hashedPassword = passwordEncoder.encode(user.getPassword());
+            user.setPassword(hashedPassword);
+        }
         return userRepository.save(user);
     }
 
@@ -55,12 +53,28 @@ public class UserService {
             .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
-    // UPDATE
+    // UPDATE seletivo
+    @SuppressWarnings("null")
     @CacheEvict(value = {"users", "user", "users_page"}, key = "#id", allEntries = true)
     public User update(Long id, User newUser) {
         User user = findById(id);
-        user.setName(newUser.getName());
-        user.setEmail(newUser.getEmail());
+
+        if (newUser.getName() != null) user.setName(newUser.getName());
+        if (newUser.getEmail() != null) user.setEmail(newUser.getEmail());
+        if (newUser.getBio() != null) user.setBio(newUser.getBio());
+
+        if (newUser.getPassword() != null && !newUser.getPassword().isBlank()) {
+            String hashedPassword = passwordEncoder.encode(newUser.getPassword());
+            user.setPassword(hashedPassword);
+        }
+
+        if (newUser.getProfile() != null && newUser.getProfile().length > 0) {
+            user.setProfile(newUser.getProfile());
+        }
+        if (newUser.getResume() != null && newUser.getResume().length > 0) {
+            user.setResume(newUser.getResume());
+        }
+
         return userRepository.save(user);
     }
 
@@ -83,53 +97,6 @@ public class UserService {
         }
 
         return user;
-    }
-
-    // EMAIL EXISTS
-    public boolean emailExists(String email) {
-        if (email == null || email.trim().isEmpty()) {
-            return false;
-        }
-        return userRepository.existsByEmailIgnoreCase(email.trim());
-    }
-
-    // UPDATE PROFILE IMAGE
-    public void updateProfileImage(Long id, String base64) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
-        if (base64 == null || base64.trim().isEmpty()) {
-            user.setProfile(null);
-            userRepository.save(user);
-            return;
-        }
-
-        byte[] imageBytes;
-        try {
-            imageBytes = Base64.getDecoder().decode(base64);
-        } catch (IllegalArgumentException ex) {
-            throw new RuntimeException("Invalid image data", ex);
-        }
-
-        user.setProfile(imageBytes);
-        userRepository.save(user);
-    }
-
-    // Convert User to UserResponseDTO
-    public UserResponseDTO toDTO(User user) {
-        String imageBase64 = null;
-
-        if (user.getProfile() != null) {
-            imageBase64 = Base64.getEncoder().encodeToString(user.getProfile());
-        }
-
-        UserResponseDTO dto = new UserResponseDTO();
-        dto.setId(user.getId());
-        dto.setName(user.getName());
-        dto.setEmail(user.getEmail());
-        dto.setProfileBase64(imageBase64);
-
-        return dto;
     }
 
 }
