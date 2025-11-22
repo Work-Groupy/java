@@ -99,4 +99,10 @@ public class UserService {
         return user;
     }
 
+    // CHECK EMAIL EXISTS
+    public boolean emailExists(String email) {
+        return userRepository.existsByEmailIgnoreCase(email);
+    }
+
+
 }
