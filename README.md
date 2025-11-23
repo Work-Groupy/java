@@ -34,9 +34,7 @@ API REST para gerenciamento de usuários (cadastro, listagem, paginação, atual
 19. Licença (placeholder)  
 20. CRUD de Funcionários (Postman)  
 21. Anexos: Exemplos de Corpo de Requisição  
-22. Observações Importantes  
-23. Perguntas Frequentes (FAQ)  
-24. Contato  
+22. Contato  
 
 ---
 
@@ -582,43 +580,11 @@ Usar variável `{{baseUrl}}` = `http://localhost:8080`.
   "password": "Nov4@Senha"
 }
 ```
-
 ---
 
-## 22. Observações Importantes
-
-- Senha não deve ser logada em texto puro.
-- Retorno do create de usuário inclui hash — considerar ocultar em DTO.
-- Exceções genéricas → 500; padronizar com objeto estruturado.
-- Funcionários ainda sem validação/camada service/cache.
-- Adicionar testes e DTOs melhora manutenção.
-
----
-
-## 23. Perguntas Frequentes (FAQ)
-
-1. Por que a senha não autentica após atualização?  
-   - Verifique regex e presença do bean `PasswordEncoder`.
-
-2. Como adicionar TTL ao cache?  
-   - Propriedades:
-     ```
-     spring.cache.cache-names=users,users_page,user
-     spring.cache.caffeine.spec=maximumSize=500,expireAfterWrite=10m
-     ```
-
-3. Como evitar expor hash de senha?  
-   - Usar DTO de resposta sem `password`.
-
-4. Posso usar PATCH para funcionário?  
-   - Sim. Criar `@PatchMapping` e aplicar merge parcial (ignorar `null`).
-
----
-
-## 24. Contato
+## 22. Contato
 
 Use Issues do repositório para bugs e sugestões.
 
 ---
 
-Bom desenvolvimento!
