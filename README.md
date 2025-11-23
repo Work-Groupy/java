@@ -31,7 +31,12 @@ API REST para gerenciamento de usuários (cadastro, listagem, paginação, atual
 16. Como Testar Localmente  
 17. Extensões Futuras Sugeridas  
 18. Contribuição  
-19. Licença (placeholder)
+19. Licença (placeholder)  
+20. CRUD de Funcionários (Postman)  
+21. Anexos: Exemplos de Corpo de Requisição  
+22. Observações Importantes  
+23. Perguntas Frequentes (FAQ)  
+24. Contato  
 
 ---
 
@@ -76,10 +81,10 @@ Fluxo de criação de usuário:
 
 ```
 br.com.fiap.workgroup
- ├── controllers        (UserController)
+ ├── controllers        (UserController, FuncionarioController)
  ├── services           (UserService)
- ├── repositories       (UserRepository)
- ├── models             (User)
+ ├── repositories       (UserRepository, FuncionarioRepository)
+ ├── models             (User, Funcionario)
  ├── dtos               (IntroDTO, LoginDTO, LoginResponseDTO)
  ├── hateoas            (IntroAssembler)
  └── exceptions         (GlobalExceptionHandler)
@@ -190,20 +195,18 @@ Resposta:
 ```
 
 ### 7.3 GET /user/all
-Lista todos os usuários (cacheado).
 ```
 curl http://localhost:8080/user/all
 ```
 
 ### 7.4 GET /user/page?page=0&size=10&sort=name,asc
-Paginação (Spring Data Pageable).
 ```
 curl "http://localhost:8080/user/page?page=0&size=5&sort=name,asc"
 ```
 Resposta (exemplo):
 ```json
 {
-  "content": [ { "id":1,"name":"Alice","email":"alice@example.com", ... } ],
+  "content": [ { "id":1,"name":"Alice","email":"alice@example.com" } ],
   "pageable": { "pageNumber":0,"pageSize":5 },
   "totalPages": 1,
   "totalElements": 1,
@@ -220,7 +223,7 @@ curl http://localhost:8080/user/1
 ```
 
 ### 7.6 PUT /user/update/{id}
-Atualização seletiva (somente campos não nulos no body sobrescrevem).
+Atualização seletiva.
 ```
 curl -X PUT http://localhost:8080/user/update/1 \
   -H "Content-Type: application/json" \
@@ -237,7 +240,6 @@ Resposta:
 ```
 
 ### 7.8 POST /user/login
-Autentica por e‑mail/senha (comparação de hash).
 ```
 curl -X POST http://localhost:8080/user/login \
   -H "Content-Type: application/json" \
@@ -253,7 +255,6 @@ Resposta:
 ```
 
 ### 7.9 GET /user/exists?email=alice@example.com
-Verifica existência (case insensitive).
 ```
 curl "http://localhost:8080/user/exists?email=alice@example.com"
 ```
@@ -267,14 +268,12 @@ true
 ## 8. HATEOAS (IntroAssembler)
 
 `IntroAssembler` constrói `_links` usando `linkTo(methodOn(...))`.
-Links possuem `rel` em português:
+Rels em português:
 - listar-usuarios
 - listar-usuarios-pelo-id
 - cadastrar-usuarios
 - atualizar-usuarios
 - deletar-usuarios
-
-Útil para clientes que seguem navegação dirigida por hipermídia.
 
 ---
 
@@ -282,12 +281,11 @@ Links possuem `rel` em português:
 
 Endpoint: `GET /user/page`
 
-Parâmetros suportados (padrão Spring):
-| Parâmetro | Exemplo | Descrição |
-|-----------|---------|-----------|
+| Parâmetro | Exemplo | Descrição         |
+|-----------|---------|------------------|
 | page      | 0       | Índice (0-based) |
 | size      | 20      | Tamanho da página |
-| sort      | name,asc| Ordenação (campo, direção) |
+| sort      | name,asc| Campo + direção  |
 
 ---
 
@@ -295,49 +293,40 @@ Parâmetros suportados (padrão Spring):
 
 - Hash aplicado em `create` e `update` quando senha não é vazia.
 - Comparação: `passwordEncoder.matches(raw, hashed)`.
-- Necessário declarar um bean `PasswordEncoder` (exemplo):
 
+Exemplo bean:
 ```java
-// Exemplo de configuração (adicionar em classe @Configuration)
 @Bean
 public PasswordEncoder passwordEncoder() {
     return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
 }
 ```
 
-Sem isso, a injeção (`@Autowired PasswordEncoder`) falhará.
-
 ---
 
 ## 11. Atualização Seletiva
 
 `PUT /user/update/{id}`:
-- Atualiza somente campos presentes e não nulos no corpo.
-- Arrays `profile` e `resume` só substituídos se tamanho > 0.
-- Senha re-hasheada se enviada (mesma política da criação).
-
-Sugestão para atualizações parciais futuras: implementar `PATCH` com JSON Merge Patch ou JSON Patch. Atualmente o `PUT` já funciona como "partial update".
+- Atualiza somente campos presentes e não nulos.
+- Lobs só substituídos se enviados.
+- Senha re-hasheada se enviada.
 
 ---
 
 ## 12. Exceções e Formatos de Erro
 
-`GlobalExceptionHandler` cobre:
-
-| Classe / Caso                          | Status | Corpo |
-|----------------------------------------|--------|-------|
-| `MethodArgumentNotValidException`      | 400    | `{ "field": "mensagem" , ... }` |
-| `HttpMessageNotReadableException`      | 400    | `"Invalid JSON format. Please check your request body."` |
-| `NotFoundException` (Spring ChangeSet) | 404    | Mensagem da exceção |
-| Qualquer outra (`Exception`)           | 500    | `"An unexpected error occurred."` (stack trace no console) |
-
-OBS: Em `UserService.findById` e outros throws é usada `RuntimeException("User not found...")`. Isto cairá no handler genérico como 500; recomendável padronizar para retornar 404 (ex. lançar `ResponseStatusException(HttpStatus.NOT_FOUND, ...)` ou criar exceção custom).
+| Caso                                | Status | Corpo (exemplo) |
+|-------------------------------------|--------|-----------------|
+| MethodArgumentNotValidException     | 400    | `{ "campo": "mensagem" }` |
+| HttpMessageNotReadableException     | 400    | `"Invalid JSON format. Please check your request body."` |
+| NotFoundException (Spring ChangeSet)| 404    | Mensagem |
+| Exception (genérica)                | 500    | `"An unexpected error occurred."` |
 
 ---
 
 ## 13. Configuração de Banco (Oracle)
 
-`application.properties` (exemplo):
+`application.properties`:
 ```
 spring.datasource.url=jdbc:oracle:thin:@//HOST:PORT/SERVICE
 spring.datasource.username=USUARIO
@@ -352,10 +341,6 @@ spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
 spring.cache.type=caffeine
 ```
 
-Dependendo do ambiente de desenvolvimento, pode ser conveniente:
-- Usar Oracle XE via container.
-- Perfil `test` substituindo por H2 (apenas para testes rápidos; atenção às diferenças de comportamento de sequences).
-
 ---
 
 ## 14. Build & Execução
@@ -365,14 +350,12 @@ Build:
 ./mvnw clean package
 ```
 
-Execução:
+Run:
 ```
 ./mvnw spring-boot:run
 # ou
 java -jar target/workgroup-0.0.1-SNAPSHOT.jar
 ```
-
-Porta padrão: `8080`.
 
 ---
 
@@ -388,69 +371,49 @@ Porta padrão: `8080`.
 <dependency> spring-boot-starter-cache </dependency>
 <dependency> caffeine </dependency>
 <dependency> spring-security-crypto </dependency>
-<dependency> lombok (optional + annotationProcessor) </dependency>
-<dependency> spring-boot-starter-test (test) </dependency>
-<dependency> spring-boot-devtools (runtime optional) </dependency>
+<dependency> lombok </dependency>
+<dependency> spring-boot-starter-test </dependency>
+<dependency> spring-boot-devtools </dependency>
 ```
 
 ---
 
 ## 16. Como Testar Localmente
 
-1. Garanta Oracle acessível (ou adapte para H2).
+1. Suba Oracle ou adapte para H2.
 2. Configure `application.properties`.
-3. Inicie a aplicação.
-4. Teste fluxo completo:
-   - Criar usuário
-   - Verificar `/user/all`
-   - Paginar `/user/page?page=0&size=2`
-   - Login
-   - Atualizar senha
-   - Apagar usuário
-5. Inspecione logs para validação de cache (uso pode ser observado adicionando log nas operações).
-
-Testes automatizados não foram inspecionados (nenhum teste listado). Sugestão:
-- Criar testes unitários para `UserService` (mock `UserRepository` + `PasswordEncoder`).
-- Testes de integração com banco (Testcontainers Oracle ou H2 com script adaptado).
-- Teste de controller usando `@WebMvcTest`.
+3. Inicie aplicação.
+4. Fluxo: criar usuário → listar → paginar → login → atualizar → deletar.
+5. Validar comportamento de cache.
+6. Criar testes unitários/integrados conforme sugerido.
 
 ---
 
 ## 17. Extensões Futuras Sugeridas
 
-| Tema                | Ação |
-|---------------------|------|
-| Autenticação JWT    | Introduzir `spring-boot-starter-security`, gerar token no login |
-| Padronização erros  | Substituir `RuntimeException` por exceções custom + status coerentes |
-| Observabilidade     | Adicionar Actuator + métricas |
-| Documentação API    | Integrar `springdoc-openapi-starter-webmvc-ui` |
-| Upload Imagens      | Converter `byte[]` para armazenamento externo (S3, MinIO) |
-| Migrações DB        | Flyway para versionamento de esquema |
-| Rate limiting       | Adicionar Bucket4j / Resilience4j |
-| Melhor cache        | TTL, métricas e limpeza seletiva |
-| DTOs específicos    | Expor modelos sem campo `password` (já não expõe? – login sim) |
-| Tratamento de LOB   | Endpoints específicos para upload/download (multipart) |
+| Tema                | Sugestão |
+|---------------------|----------|
+| Autenticação JWT    | Security + emissão de token |
+| Padronização erros  | Exceções custom + RFC 7807 |
+| Observabilidade     | Actuator + métricas |
+| Documentação API    | springdoc-openapi |
+| Upload Imagens      | S3 / MinIO |
+| Migrações DB        | Flyway |
+| Rate limiting       | Bucket4j / Resilience4j |
+| Melhor cache        | TTL + métricas |
+| DTOs específicos    | Remover `password` das respostas |
+| Tratamento de LOB   | Endpoints multipart dedicados |
 
 ---
 
 ## 18. Contribuição
 
-1. Crie branch:
-```
-git checkout -b feat/nova-funcionalidade
-```
-2. Altere / adicione código.
-3. Garanta build:
-```
-./mvnw clean verify
-```
-4. Abra Pull Request descrevendo:
-   - Objetivo
-   - Mudanças técnicas
-   - Como testar
-   - Impacto em config
+1. Branch: `git checkout -b feat/nova-funcionalidade`
+2. Implementar.
+3. Build: `./mvnw clean verify`
+4. Pull Request com objetivo, mudanças, testes, impacto.
 
-Padrão de commit sugerido:
+Commits:
 ```
 feat(user): adiciona endpoint de alteração de avatar
 fix(user): corrige validação de e-mail
@@ -460,16 +423,145 @@ fix(user): corrige validação de e-mail
 
 ## 19. Licença
 
-Ainda não definida no `pom.xml` (tags estão vazias). Recomenda-se adicionar arquivo `LICENSE` (ex.: MIT ou Apache 2.0) e preencher metadados.
-
-Exemplo trecho MIT:
-```
-Permission is hereby granted, free of charge, to any person obtaining a copy...
-```
+Ainda não definida. Adicionar arquivo `LICENSE` (ex.: MIT / Apache 2.0).
 
 ---
 
-## Anexos: Exemplos de Corpo de Requisição
+## 20. CRUD de Funcionários (Postman)
+
+A entidade `Funcionario`:
+```json
+{
+  "id": 1,
+  "nome": "Fulano de Tal",
+  "cargo": "Desenvolvedor",
+  "salario": 7500.0
+}
+```
+
+Base URL: `http://localhost:8080/funcionarios`
+
+### 20.1 Criar Funcionário (POST /funcionarios)
+
+Postman:
+- Método: POST
+- URL: `http://localhost:8080/funcionarios`
+- Body (raw JSON):
+```json
+{
+  "nome": "Maria Souza",
+  "cargo": "Analista",
+  "salario": 6800.0
+}
+```
+
+Resposta (exemplo):
+```json
+{
+  "id": 1,
+  "nome": "Maria Souza",
+  "cargo": "Analista",
+  "salario": 6800.0
+}
+```
+
+Curl:
+```
+curl -X POST http://localhost:8080/funcionarios \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Maria Souza","cargo":"Analista","salario":6800.0}'
+```
+
+### 20.2 Listar Todos (GET /funcionarios)
+
+```
+curl http://localhost:8080/funcionarios
+```
+Resposta:
+```json
+[
+  {
+    "id": 1,
+    "nome": "Maria Souza",
+    "cargo": "Analista",
+    "salario": 6800.0
+  },
+  {
+    "id": 2,
+    "nome": "João Silva",
+    "cargo": "Dev Backend",
+    "salario": 8000.0
+  }
+]
+```
+
+### 20.3 Buscar por ID (GET /funcionarios/{id})
+
+```
+curl http://localhost:8080/funcionarios/1
+```
+
+Erro se não existir: atualmente lança `RuntimeException` (retorno HTTP 500). Sugestão: substituir por exceção custom com `@ResponseStatus(HttpStatus.NOT_FOUND)`.
+
+### 20.4 Atualizar Funcionário (PUT /funcionarios/{id})
+
+PUT substitui todos os campos (não é parcial).
+```
+curl -X PUT http://localhost:8080/funcionarios/1 \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Maria S. Souza","cargo":"Analista Sênior","salario":7800.0}'
+```
+
+Body no Postman:
+```json
+{
+  "nome": "Maria S. Souza",
+  "cargo": "Analista Sênior",
+  "salario": 7800.0
+}
+```
+
+Observação: Para suportar atualização parcial futura, implementar `PATCH` ou lógica que ignore campos `null`.
+
+### 20.5 Remover Funcionário (DELETE /funcionarios/{id})
+
+```
+curl -X DELETE http://localhost:8080/funcionarios/1
+```
+
+Resposta atual: corpo vazio (status 200 ou 204 dependendo da configuração). Recomenda-se retornar mensagem ou usar 204.
+
+### 20.6 Boas Práticas Futuras
+
+- Adicionar validações:
+  ```java
+  @NotBlank private String nome;
+  @NotBlank private String cargo;
+  @PositiveOrZero private double salario;
+  ```
+- Padronizar resposta de erro 404.
+- Introduzir DTO (ex.: FuncionarioResponseDTO).
+- Testes: `@WebMvcTest(FuncionarioController.class)` + mocks.
+- Paginação futura: criar endpoint `GET /funcionarios/page?page=0&size=10`.
+- Cache se necessário (similar ao usuário).
+
+### 20.7 Exemplo de Collection Postman
+
+```
+Workgroup API
+ └── Funcionarios
+      ├── Create Funcionário
+      ├── List Funcionários
+      ├── Get Funcionário por ID
+      ├── Update Funcionário
+      └── Delete Funcionário
+```
+
+Usar variável `{{baseUrl}}` = `http://localhost:8080`.
+
+---
+
+## 21. Anexos: Exemplos de Corpo de Requisição
 
 ### Usuário Completo (Create)
 ```json
@@ -483,7 +575,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy...
 }
 ```
 
-### Atualização Seletiva (PUT)
+### Atualização Seletiva (PUT User)
 ```json
 {
   "bio": "Nova bio",
@@ -491,45 +583,42 @@ Permission is hereby granted, free of charge, to any person obtaining a copy...
 }
 ```
 
-Se enviar campos nulos ou ausentes: não serão alterados.
+---
+
+## 22. Observações Importantes
+
+- Senha não deve ser logada em texto puro.
+- Retorno do create de usuário inclui hash — considerar ocultar em DTO.
+- Exceções genéricas → 500; padronizar com objeto estruturado.
+- Funcionários ainda sem validação/camada service/cache.
+- Adicionar testes e DTOs melhora manutenção.
 
 ---
 
-## Observações Importantes
+## 23. Perguntas Frequentes (FAQ)
 
-- Senha nunca deve ser logada em texto puro.
-- Retorno do create inclui `password` (hash). Para segurança, considere omitir no futuro (DTO de resposta).
-- Exceções genéricas retornam 500 com mensagem vaga – ideal padronizar usando objeto JSON estruturado.
-- HATEOAS: alguns links usam `methodOn(...).getById(null)` – para evitar `null`, pode-se criar link template ou ajustar assembler.
-
----
-
-## Perguntas Frequentes (FAQ)
-
-1. Por que minha senha não autentica após atualização?  
-   - Verifique se o regex de senha foi atendido e se o hash foi gerado (config do `PasswordEncoder`).
+1. Por que a senha não autentica após atualização?  
+   - Verifique regex e presença do bean `PasswordEncoder`.
 
 2. Como adicionar TTL ao cache?  
-   - Configure Caffeine via `CacheCustomizer` ou propriedades:  
-     `spring.cache.cache-names=users,users_page,user`  
-     `spring.cache.caffeine.spec=maximumSize=500,expireAfterWrite=10m`
+   - Propriedades:
+     ```
+     spring.cache.cache-names=users,users_page,user
+     spring.cache.caffeine.spec=maximumSize=500,expireAfterWrite=10m
+     ```
 
-3. Como evitar expor o hash?  
-   - Criar DTO de resposta sem `password` e mapear antes de retornar.
+3. Como evitar expor hash de senha?  
+   - Usar DTO de resposta sem `password`.
+
+4. Posso usar PATCH para funcionário?  
+   - Sim. Criar `@PatchMapping` e aplicar merge parcial (ignorar `null`).
 
 ---
 
-## Contato
+## 24. Contato
 
 Use Issues do repositório para bugs e sugestões.
 
 ---
-
-Se desejar, posso fornecer:
-- Arquivo de configuração de segurança inicial (JWT)
-- Esquema OpenAPI
-- Exemplo de Dockerfile / Docker Compose para Oracle XE
-
-Solicite conforme necessidade.
 
 Bom desenvolvimento!
