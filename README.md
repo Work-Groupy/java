@@ -9,7 +9,7 @@ API REST para gerenciamento de usuários (cadastro, listagem, paginação, atual
 - Tratamento global de exceções
 - Upload/armazenamento de binários simples (imagens/perfil/currículo via `byte[]`)
 
----
+----
 
 ## Sumário
 
